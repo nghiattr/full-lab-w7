@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: be-deployment
+  labels:
+    app: be-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: be-app
+  template:
+    metadata:
+      labels:
+        app: be-app
+    spec:
+      containers:
+      - name: be-app
+        image: nghiattracrk8s.azurecr.io/nghiatest:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000

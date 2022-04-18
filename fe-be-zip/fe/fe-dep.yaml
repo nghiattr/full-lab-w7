@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fe-deployment
+  labels:
+    app: fe-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fe-app
+  template:
+    metadata:
+      labels:
+        app: fe-app
+    spec:
+      containers:
+      - name: fe-app
+        image: nghiattracrk8s.azurecr.io/nghiatest-fe:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 4200
+        env:
+        - name: beURL
+          value: "be-helm"

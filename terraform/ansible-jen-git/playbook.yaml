@@ -1,0 +1,155 @@
+---
+- hosts: server1
+  become: true
+  vars:
+    default_container_name: jenkins-server
+    default_container_image: jenkins/jenkins:lts
+    default_container_command: jenkins-sv
+    
+
+  tasks:
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+    
+    - name: Creates directory
+      file:
+        path: ./datajenkins
+        state: directory
+
+    - name: Pull default Docker image
+      docker_image:
+        name: "{{ default_container_image }}"
+        source: pull
+
+    - name: command install jenkins
+      command: bash -c "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v $(which docker):$(which docker) -v `pwd`/datajenkins:/var/jenkins_home  -p 8080:8080  --user 0:0 --name jenkins-server -d jenkins/jenkins:lts"
+
+    # - name: Create default containers
+    #   docker_container:
+    #     name: "{{ default_container_name }}"
+    #     image: "{{ default_container_image }}"
+    #     docker_host: unix://var/run/docker.sock
+    #     ports:
+    #       - "8080:8080"
+    #     volumes:
+    #       - /home/labadmin/datajenkins:/var/jenkins_home
+    #     # command: "{{ default_container_command }}"
+    #     user:
+    #       - "root:"
+    #     restart_policy: always
+    #     state: started
+
+    # - name: test command
+    #   command: bash -c "sudo docker run --detach --publish 8011:443 --publish 8012:80 --publish 8013:22 --name gitlab-sv --volume /config-gl/config:/etc/gitlab --volume /logs-gl/logs:/var/log/gitlab --volume /data-gl/data:/var/opt/gitlab gitlab/gitlab-ce:latest"
+    
+    # - name: testcommand jenkins
+    #   command: bash -c "sudo docker run -v /var/run/docker.sock:/var/run/docker.sock -v $(which docker):$(which docker) -v `pwd`/datajenkins:/var/jenkins_home  -p 8080:8080  --user 0:0 --name jenkins-server -d jenkins/jenkins:lts"
+    
+    - name: Creates directory gitlab
+      file:
+        path: 
+          - /config-gl
+          - /logs-gl
+          - /data-gl
+        state: directory
+
+    - name: Pull image gitlab-ce
+      docker_image:
+        name: gitlab/gitlab-ce:latest
+        source: pull
+
+    - name: command install gitlab
+      command: bash -c "sudo docker run --detach --publish 8011:443 --publish 8012:80 --publish 8013:22 --name gitlab-sv --volume /config-gl/config:/etc/gitlab --volume /logs-gl/logs:/var/log/gitlab --volume /data-gl/data:/var/opt/gitlab gitlab/gitlab-ce:latest"
+    
+    - name: sleep wait
+      command: /bin/sleep 40
+
+    - name: cat pass jenkins
+      command: bash -c "sudo docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword"
+      register: pass_jen
+
+    - name: cat pass gitlab
+      command: bash -c "sudo docker exec -it gitlab-sv grep 'Password:' /etc/gitlab/initial_root_password"
+      register: pass_git
+ 
+    
+    - debug:
+        var: pass_jen.stdout_lines
+    - debug:
+        var: pass_git.stdout_lines
+
+
+    # - name: Creates directory
+    #   file:
+    #     path: 
+    #       - /config-gl
+    #       - /logs-gl
+    #       - /data-gl
+    #     state: directory
+
+    # - name: Creates directory
+    #   file:
+    #     path: ./data-gl
+    #     state: directory
+    
+    # - name: Creates directory
+    #   file:
+    #     path: ./logs-gl
+    #     state: directory
+
+    # - name: Pull default Docker image
+    #   docker_image:
+    #     name: gitlab/gitlab-ce:latest
+    #     source: pull
+
+    # - name: Create default containers
+    #   docker_container:
+    #     name: "gitlab-sv"
+    #     image: "gitlab/gitlab-ce:latest"
+    #     docker_host: unix://var/run/docker.sock
+    #     ports:
+    #       - "8011:80"
+    #       - "8012:22"
+    #       - "8013:443"
+    #     volumes:
+    #       - /home/labadmin/config-gl:/etc/gitlab
+    #       - /home/labadmin/logs-gl:/var/log/gitlab
+    #       - /home/labadmin/data-gl:/var/opt/gitlab
+    #     command: "gitlab-sv-test"
+    #     state: started

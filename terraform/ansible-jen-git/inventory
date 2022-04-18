@@ -1,0 +1,7 @@
+[server1]
+
+
+[server1:var]
+ansible_user=labadmin
+ansible_password=Password1234!
+ansible_python_interpreter=/usr/bin/python3
